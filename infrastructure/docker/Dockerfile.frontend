@@ -1,0 +1,50 @@
+FROM python:3.11-slim
+
+LABEL maintainer="AI Context Firewall <security@your-org.com>"
+LABEL description="AI Context Firewall Streamlit Frontend"
+
+RUN groupadd -r acf && useradd -r -g acf acf
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /app/.streamlit && chown -R acf:acf /app
+
+# Streamlit config
+RUN cat > /app/.streamlit/config.toml << 'EOF'
+[server]
+headless = true
+port = 8501
+address = "0.0.0.0"
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "dark"
+primaryColor = "#7B5EA7"
+backgroundColor = "#0d0d1a"
+secondaryBackgroundColor = "#1e1e2e"
+textColor = "#e0e0e0"
+font = "monospace"
+EOF
+
+USER acf
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

@@ -1,0 +1,84 @@
+# ==================================================
+# GDPR Compliance Policy
+# AI Context Firewall — Governance Policy Engine
+# Framework: GDPR (EU 2016/679)
+# Version: 1.0.0
+# ==================================================
+
+id: gdpr_v1
+name: "GDPR Privacy Regulation"
+framework: gdpr
+version: "1.0.0"
+description: >
+  Enforces EU General Data Protection Regulation (2016/679) data minimization,
+  purpose limitation, and data subject rights for AI processing of personal data.
+enforce_mode: true
+active: true
+
+rules:
+
+  - id: gdpr_pii_redact
+    name: "Redact PII — Data Minimization Principle"
+    description: "GDPR Art.5(1)(c) requires data minimization. PII must not be exposed to AI unnecessarily."
+    condition_type: entity_detected
+    condition_value:
+      - email
+      - phone
+      - address
+      - date_of_birth
+      - national_id
+      - passport
+      - drivers_license
+    action: redact
+    severity: high
+    explanation: "PII detected. GDPR Art.5(1)(c) data minimization principle requires redaction before AI processing."
+    remediation: "Redact identified PII. Verify legal basis (Art.6) for processing. Document in processing register (Art.30)."
+    enabled: true
+
+  - id: gdpr_eu_region_controls
+    name: "Enhanced Controls for EU Region Data"
+    description: "Data from EU residents requires GDPR compliance regardless of processing location."
+    condition_type: region
+    condition_value:
+      - EU
+      - EEA
+      - UK
+    action: alert
+    severity: medium
+    explanation: "EU/EEA region data detected. GDPR schrems II and data transfer rules apply."
+    remediation: "Verify data transfer mechanisms (Art.46 SCCs or Art.45 adequacy). Log processing activity."
+    enabled: true
+
+  - id: gdpr_ip_address
+    name: "Redact IP Addresses (Personal Data)"
+    description: "Under GDPR, IP addresses are personal data (Recital 30). Must not be logged in LLM context."
+    condition_type: entity_detected
+    condition_value:
+      - ip_address
+    action: redact
+    severity: medium
+    explanation: "IP address detected. GDPR Recital 30 classifies IP addresses as personal data."
+    remediation: "Hash or remove IP address before AI processing. Store only anonymized version."
+    enabled: true
+
+  - id: gdpr_high_risk_block
+    name: "Block High-Risk Processing Without DPIA"
+    description: "GDPR Art.35 requires DPIA for high-risk processing. Block above risk threshold."
+    condition_type: risk_score_above
+    condition_value: 0.85
+    action: block
+    severity: critical
+    explanation: "High-risk personal data processing detected without DPIA authorization."
+    remediation: "Conduct Data Protection Impact Assessment (Art.35). Get DPO approval. Document decision."
+    enabled: true
+
+  - id: gdpr_injection_alert
+    name: "Alert on Injection in GDPR Context"
+    description: "Injection attacks in GDPR context may lead to unauthorized data disclosure."
+    condition_type: injection_detected
+    condition_value: true
+    action: block
+    severity: critical
+    explanation: "Injection attack in context of personal data processing. Potential GDPR Art.32 security breach."
+    remediation: "Block. Assess if personal data breach under Art.33. Report to DPA within 72 hours if confirmed."
+    enabled: true

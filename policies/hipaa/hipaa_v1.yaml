@@ -1,0 +1,92 @@
+# ==================================================
+# HIPAA Compliance Policy
+# AI Context Firewall — Governance Policy Engine
+# Framework: HIPAA (45 CFR Parts 160 & 164)
+# Version: 1.0.0
+# ==================================================
+
+id: hipaa_v1
+name: "HIPAA Security & Privacy Rule"
+framework: hipaa
+version: "1.0.0"
+description: >
+  Enforces HIPAA Privacy Rule (45 CFR §164.500) and Security Rule (45 CFR §164.300)
+  for Protected Health Information (PHI). Applies to all healthcare-related AI interactions.
+industry: healthcare
+enforce_mode: true
+active: true
+
+rules:
+
+  - id: hipaa_phi_ssn
+    name: "Block SSN in Healthcare Context"
+    description: "SSNs are PHI under HIPAA Safe Harbor (§164.514(b)(2)). Must be de-identified."
+    condition_type: entity_detected
+    condition_value:
+      - ssn
+      - national_id
+    action: redact
+    severity: critical
+    explanation: "SSN detected in healthcare context. HIPAA Safe Harbor identifier (§164.514) requires de-identification."
+    remediation: "Redact SSN before processing. Use [REDACTED_SSN] placeholder. Do not transmit to LLM."
+    enabled: true
+
+  - id: hipaa_phi_mrn
+    name: "Redact Medical Record Numbers"
+    description: "MRNs are direct PHI identifiers under HIPAA §164.514(b)(2)(i)."
+    condition_type: entity_detected
+    condition_value:
+      - medical_record_number
+      - health_plan_beneficiary
+    action: redact
+    severity: critical
+    explanation: "Medical Record Number (MRN) or Health Plan Beneficiary ID detected. Direct HIPAA PHI identifier."
+    remediation: "Replace MRN with [MRN_REDACTED]. Audit access. Verify minimum necessary standard (§164.502(b))."
+    enabled: true
+
+  - id: hipaa_phi_high_risk_score
+    name: "Block High-Risk Healthcare Queries"
+    description: "High risk score in healthcare context suggests PHI exposure."
+    condition_type: risk_score_above
+    condition_value: 0.80
+    action: block
+    severity: high
+    explanation: "Risk score exceeds 0.80 threshold in healthcare context. Potential PHI disclosure."
+    remediation: "Block request. Require human review. Log event for HIPAA breach assessment."
+    enabled: true
+
+  - id: hipaa_injection_block
+    name: "Block Injection in Healthcare Systems"
+    description: "Prompt injection in healthcare AI can lead to PHI leakage or unsafe clinical recommendations."
+    condition_type: injection_detected
+    condition_value: true
+    action: block
+    severity: critical
+    explanation: "Prompt injection detected in healthcare AI system. HIPAA Security Rule §164.312 requires access controls."
+    remediation: "Block immediately. Log attempt. Notify Security Officer per §164.308(a)(6) incident procedures."
+    enabled: true
+
+  - id: hipaa_diagnosis_redact
+    name: "Redact Diagnosis Codes"
+    description: "ICD-10 diagnosis codes can reveal health conditions and constitute PHI."
+    condition_type: entity_detected
+    condition_value:
+      - diagnosis_code
+      - prescription
+    action: redact
+    severity: high
+    explanation: "Clinical diagnosis code or prescription detected. Reveals health condition — HIPAA PHI."
+    remediation: "Redact clinical codes. Use de-identified alternatives per §164.514 Safe Harbor."
+    enabled: true
+
+  - id: hipaa_audit_all_phi
+    name: "Audit All PHI Category Access"
+    description: "All PHI data category access must be logged per HIPAA §164.312(b)."
+    condition_type: data_category
+    condition_value:
+      - phi
+    action: audit
+    severity: medium
+    explanation: "PHI data category accessed. HIPAA §164.312(b) requires audit controls."
+    remediation: "Ensure audit log is complete. Retain for 6 years per §164.530(j)."
+    enabled: true

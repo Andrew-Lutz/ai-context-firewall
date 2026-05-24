@@ -1,0 +1,162 @@
+# Enterprise Custom Policy — AI Context Firewall
+# Flexible policy template for enterprise-specific governance requirements.
+# Extend and customize for your organization's AI usage policies.
+
+policy_id:      enterprise_v1
+name:           Enterprise AI Governance Policy
+version:        "1.0.0"
+description:    >
+  Configurable enterprise policy for AI usage governance. Covers IP protection,
+  competitive intelligence, workforce privacy, M&A confidentiality, and
+  custom organizational controls. Edit the rules below for your requirements.
+frameworks:     [INTERNAL, CUSTOM]
+effective_date: "2026-01-01"
+severity:       high
+
+# Organization metadata (customize)
+organization:
+  name:      "ACME Corporation"
+  tenant_id: "tenant_acme_corp"
+  contact:   "security@acme.com"
+
+rules:
+
+  - rule_id:     ent_001
+    name:        Intellectual Property Protection
+    description: Block transmission of trade secrets, proprietary algorithms, and IP
+    condition:
+      type:       keyword_match
+      keywords:
+        - "proprietary algorithm"
+        - "trade secret"
+        - "confidential formula"
+        - "internal source code"
+        - "unreleased product"
+        - "roadmap confidential"
+        - "patent pending"
+    action:       block
+    severity:     critical
+    message:      "Potential IP disclosure blocked — enterprise data governance policy."
+    audit:        true
+    tags:         [ip_protection, legal]
+
+  - rule_id:     ent_002
+    name:        M&A Confidentiality
+    description: Protect sensitive merger, acquisition, and deal information
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:Project|Operation)\\s+[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?"
+        - "(?:due diligence|LOI|letter of intent|term sheet|NDA)\\s+(?:for|with|regarding)"
+        - "(?:acquisition|merger|buyout|JV|joint venture)\\s+(?:target|candidate|deal)"
+        - "valuation\\s+(?:model|analysis|report)\\s+(?:confidential|internal)"
+    action:       block
+    severity:     critical
+    message:      "M&A sensitive information detected — confidentiality controls applied."
+    audit:        true
+    tags:         [ma, legal, finance]
+
+  - rule_id:     ent_003
+    name:        Competitive Intelligence Restriction
+    description: Alert on requests involving competitor pricing, strategies, or contracts
+    condition:
+      type:       keyword_match
+      keywords:
+        - "competitor pricing"
+        - "competitive bid"
+        - "competitor contract"
+        - "poach customer"
+        - "steal client"
+        - "undercut competitor"
+    action:       alert
+    severity:     high
+    message:      "Competitive intelligence request flagged for review."
+    audit:        true
+    tags:         [competitive, legal]
+
+  - rule_id:     ent_004
+    name:        Employee Privacy
+    description: Protect employee PII, performance data, and HR information
+    condition:
+      type:       regex_match
+      patterns:
+        - "employee\\s+(?:ID|number|#)\\s*:?\\s*[0-9]+"
+        - "(?:salary|compensation|bonus)\\s+(?:for|of)\\s+[A-Z][a-z]+\\s+[A-Z][a-z]+"
+        - "performance\\s+(?:review|rating|score)\\s+(?:for|of)\\s+[A-Z]"
+        - "(?:disciplinary|termination|PIP)\\s+(?:action|notice|plan)\\s+(?:for|of)"
+    action:       redact
+    severity:     high
+    message:      "Employee personal data redacted — HR privacy policy."
+    audit:        true
+    tags:         [hr, privacy, employee]
+
+  - rule_id:     ent_005
+    name:        Customer PII in External Communications
+    description: >
+      Block sharing of customer PII in any content destined for external parties.
+      Applies when context indicates external communication.
+    condition:
+      type:       combined
+      all:
+        - entity_detected:
+            entity_types: [EMAIL, PHONE, ADDRESS, SSN]
+        - context_match:
+            keywords: ["external", "vendor", "partner", "client email", "forward", "share with"]
+    action:       block
+    severity:     critical
+    message:      "Customer PII blocked from external transmission — data governance policy."
+    audit:        true
+    tags:         [pii, external, customer]
+
+  - rule_id:     ent_006
+    name:        Financial Data Confidentiality
+    description: Protect non-public financial data — revenues, costs, and forecasts
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:internal|forecast|projected)\\s+(?:revenue|earnings|EBITDA|margin)\\s*:?\\s*\\$?[0-9]"
+        - "(?:budget|cost|spend)\\s+(?:approval|allocation)\\s*:?\\s*\\$[0-9,]+"
+        - "(?:Q[1-4]|annual|quarterly)\\s+(?:guidance|forecast|target)\\s*:?\\s*(?:confidential|internal)"
+    action:       redact
+    severity:     high
+    message:      "Non-public financial data redacted — enterprise financial confidentiality policy."
+    audit:        true
+    tags:         [finance, confidential]
+
+  - rule_id:     ent_007
+    name:        AI Output Disclosure Requirement
+    description: >
+      Require disclosure when AI-generated content is used in external-facing materials.
+      Alert compliance team for review.
+    condition:
+      type:       context_match
+      fields:
+        intended_audience: ["external", "public", "client", "press"]
+      keywords:
+        - "press release"
+        - "public announcement"
+        - "client report"
+        - "investor update"
+        - "regulatory filing"
+    action:       alert
+    severity:     medium
+    message:      "AI-generated content in external material — disclosure review required."
+    audit:        true
+    tags:         [disclosure, compliance, ai_governance]
+
+  - rule_id:     ent_008
+    name:        Data Residency Control
+    description: Prevent data from certain geographies being processed by non-approved models
+    condition:
+      type:       context_match
+      fields:
+        model:
+          - "gpt-4o"
+          - "gpt-4-turbo"
+          - "gemini-1.5-pro"
+      entity_types: [SSN, CREDIT_CARD, PHI]
+    action:       block
+    severity:     critical
+    message:      "Sensitive data blocked from non-approved model — data residency policy."
+    audit:        true
+    tags:         [data_residency, sovereignty, compliance]

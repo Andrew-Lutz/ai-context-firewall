@@ -1,0 +1,137 @@
+# SOC 2 Type II Compliance Policy — AI Context Firewall
+# Maps to AICPA Trust Service Criteria: Security, Availability,
+# Confidentiality, Processing Integrity, and Privacy.
+
+policy_id:      soc2_v1
+name:           SOC 2 Type II Compliance Policy
+version:        "1.0.0"
+description:    >
+  SOC 2 Trust Service Criteria controls for AI systems. Covers logical
+  access, data confidentiality, change management, risk monitoring,
+  and incident response requirements.
+frameworks:     [SOC2, AICPA_TSC, ISO27001]
+effective_date: "2026-01-01"
+severity:       high
+
+# Trust Service Criteria mapping
+tsc_mapping:
+  CC6.1:  [soc2_001, soc2_002]   # Logical & Physical Access Controls
+  CC6.3:  [soc2_003]             # Access Removal
+  CC7.2:  [soc2_004, soc2_005]   # System Monitoring
+  CC8.1:  [soc2_006]             # Change Management
+  P3.1:   [soc2_007]             # Privacy — PII Collection
+
+rules:
+
+  - rule_id:     soc2_001
+    name:        Privileged Access Monitoring
+    description: Alert on AI requests involving privileged or administrative actions
+    condition:
+      type:       keyword_match
+      keywords:
+        - "grant admin"
+        - "escalate privileges"
+        - "sudo"
+        - "root access"
+        - "administrative override"
+        - "bypass security"
+        - "disable logging"
+        - "disable audit"
+    action:       block
+    severity:     critical
+    tsc:          CC6.1
+    message:      "Privileged access request detected — SOC 2 CC6.1 violation."
+    audit:        true
+
+  - rule_id:     soc2_002
+    name:        Credential & Secret Exposure
+    description: Prevent credentials, tokens, or secrets from flowing through AI systems
+    condition:
+      type:       entity_detected
+      entity_types: [API_KEY, PASSWORD, SECRET_KEY, PRIVATE_KEY]
+    action:       block
+    severity:     critical
+    tsc:          CC6.1
+    message:      "Credential exposure blocked — SOC 2 CC6.1 logical access control."
+    audit:        true
+
+  - rule_id:     soc2_003
+    name:        Data Retention and Deletion Requests
+    description: >
+      Flag AI-assisted data deletion or export requests for human review
+      to maintain audit trail integrity
+    condition:
+      type:       keyword_match
+      keywords:
+        - "delete all records"
+        - "purge database"
+        - "wipe all data"
+        - "export all users"
+        - "dump database"
+        - "export customer list"
+    action:       escalate
+    severity:     high
+    tsc:          CC6.3
+    message:      "Bulk data operation requires human authorization — SOC 2 CC6.3."
+    audit:        true
+
+  - rule_id:     soc2_004
+    name:        System Configuration Access
+    description: >
+      Monitor AI interactions involving system configuration,
+      infrastructure settings, or security controls
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:modify|change|update|disable)\\s+(?:firewall|security|encryption|logging)"
+        - "(?:infrastructure|config|settings)\\s+(?:change|update|override)"
+        - "(?:production|prod)\\s+(?:environment|server|database)\\s+(?:access|connect)"
+    action:       alert
+    severity:     high
+    tsc:          CC7.2
+    message:      "System configuration access flagged for monitoring — SOC 2 CC7.2."
+    audit:        true
+
+  - rule_id:     soc2_005
+    name:        Anomalous Data Access Pattern
+    description: Detect requests for unusually broad data access
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:all|every)\\s+(?:user|customer|employee|client)\\s+(?:record|data|information)"
+        - "entire\\s+(?:database|table|dataset|collection)"
+        - "(?:select|get|fetch)\\s+\\*\\s+from"
+    action:       alert
+    severity:     medium
+    tsc:          CC7.2
+    message:      "Broad data access pattern detected — SOC 2 CC7.2 monitoring triggered."
+    audit:        true
+
+  - rule_id:     soc2_006
+    name:        Unauthorized Change Request
+    description: Block requests to modify production systems without change ticket context
+    condition:
+      type:       keyword_match
+      keywords:
+        - "deploy to production"
+        - "push to prod"
+        - "hotfix production"
+        - "emergency deploy"
+        - "skip change management"
+    action:       alert
+    severity:     high
+    tsc:          CC8.1
+    message:      "Production change request requires change management authorization — SOC 2 CC8.1."
+    audit:        true
+
+  - rule_id:     soc2_007
+    name:        Personal Data Processing Transparency
+    description: Ensure AI-assisted personal data processing is disclosed and consented
+    condition:
+      type:       entity_detected
+      entity_types: [EMAIL, PHONE, SSN, ADDRESS, DATE_OF_BIRTH]
+    action:       redact
+    severity:     medium
+    tsc:          P3.1
+    message:      "Personal data redacted — SOC 2 P3.1 privacy criteria."
+    audit:        true

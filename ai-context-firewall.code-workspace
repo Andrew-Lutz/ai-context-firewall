@@ -1,0 +1,32 @@
+{
+  "folders": [
+    {
+      "name": "🔥 AI Context Firewall",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "explorer.sortOrder": "default",
+    "python.analysis.extraPaths": ["backend"],
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/.pytest_cache": true,
+      "**/*.egg-info": true,
+      "**/*.db": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.pylint",
+      "charliermarsh.ruff",
+      "redhat.vscode-yaml",
+      "ms-azuretools.vscode-docker",
+      "eamodio.gitlens",
+      "njpwerner.autodocstring",
+      "tamasfe.even-better-toml"
+    ]
+  }
+}

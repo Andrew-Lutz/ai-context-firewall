@@ -1,0 +1,118 @@
+# FINRA Compliance Policy — AI Context Firewall
+# Financial Industry Regulatory Authority rules for AI-assisted communications
+# and data handling in broker-dealer environments.
+
+policy_id:      finra_v1
+name:           FINRA Compliance Policy
+version:        "1.0.0"
+description:    >
+  FINRA-aligned controls for AI interactions in broker-dealer and
+  registered investment adviser environments. Covers suitability,
+  communications, recordkeeping, and material non-public information.
+frameworks:     [FINRA, SEC, MSRB]
+effective_date: "2026-01-01"
+severity:       high
+
+rules:
+
+  - rule_id:     finra_001
+    name:        Block MNPI Transmission
+    description: Prevent transmission of material non-public information through AI systems
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:merger|acquisition|takeover|buyout)\\s+(?:announcement|deal|pending)"
+        - "(?:earnings|revenue|profit)\\s+(?:before|prior to)\\s+(?:announcement|release|public)"
+        - "(?:insider|non-public|MNPI|confidential)\\s+(?:information|data|intel)"
+        - "(?:tip|tipping)\\s+(?:off|insider)"
+    action:       block
+    severity:     critical
+    message:      "Potential MNPI transmission detected. Review required before sending."
+    audit:        true
+
+  - rule_id:     finra_002
+    name:        Customer Account Data Protection
+    description: Prohibit exposure of customer account details, balances, and positions
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:account\\s+(?:number|#|no\\.?))\\s*:?\\s*[0-9]{6,}"
+        - "(?:portfolio|account)\\s+(?:balance|value|worth)\\s*:?\\s*\\$[0-9,]+"
+        - "(?:holdings?|position)\\s*:.*(?:shares?|units?|lots?)\\s+(?:of|in)\\s+\\$?[A-Z]{1,5}"
+        - "customer\\s+(?:ID|number|account)\\s*:?\\s*[0-9]+"
+    action:       redact
+    severity:     high
+    message:      "Customer account information redacted per FINRA Rule 4370."
+    audit:        true
+
+  - rule_id:     finra_003
+    name:        Suitability Disclosure Requirement
+    description: >
+      Require human review for AI-generated investment recommendations
+      to ensure suitability obligations under FINRA Rule 2111
+    condition:
+      type:       keyword_match
+      keywords:
+        - "recommend buying"
+        - "recommend selling"
+        - "investment recommendation"
+        - "you should invest"
+        - "suitable for you"
+        - "best investment"
+        - "guaranteed return"
+    action:       alert
+    severity:     high
+    message:      "Investment recommendation requires suitability review (FINRA Rule 2111)."
+    audit:        true
+
+  - rule_id:     finra_004
+    name:        Recordkeeping — Communications Retention
+    description: Flag AI-generated client communications for mandatory recordkeeping
+    condition:
+      type:       context_match
+      fields:
+        department:
+          - "Sales"
+          - "Advisory"
+          - "Wealth Management"
+      keywords:
+        - "dear client"
+        - "as discussed"
+        - "per our conversation"
+        - "we recommend"
+    action:       alert
+    severity:     medium
+    message:      "Client communication flagged for FINRA Rule 4511 recordkeeping."
+    audit:        true
+
+  - rule_id:     finra_005
+    name:        Prohibited Representations
+    description: Detect claims of guaranteed returns or FINRA/SEC endorsement
+    condition:
+      type:       regex_match
+      patterns:
+        - "(?:guaranteed|risk-free|no-risk)\\s+(?:return|profit|income|yield)"
+        - "(?:FINRA|SEC|CFTC)\\s+(?:approved|endorsed|certified|recommended)"
+        - "(?:cannot|can't|won't)\\s+(?:lose|fail)"
+        - "100%\\s+(?:safe|secure|guaranteed)"
+    action:       block
+    severity:     critical
+    message:      "Prohibited representation detected. FINRA Rule 2010 compliance violation."
+    audit:        true
+
+  - rule_id:     finra_006
+    name:        Social Security Number — Financial Context
+    description: Extra protection for SSNs appearing in financial transaction context
+    condition:
+      type:       entity_detected
+      entity_types: [SSN]
+      context_keywords:
+        - "account"
+        - "wire"
+        - "transfer"
+        - "trade"
+        - "broker"
+    action:       block
+    severity:     critical
+    message:      "SSN detected in financial transaction context — blocked for FINRA compliance."
+    audit:        true

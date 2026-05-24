@@ -1,0 +1,78 @@
+# ==================================================
+# PCI-DSS Compliance Policy
+# AI Context Firewall — Governance Policy Engine
+# Framework: PCI DSS v4.0
+# Version: 1.0.0
+# ==================================================
+
+id: pci_dss_v1
+name: "PCI-DSS Payment Card Security"
+framework: pci_dss
+version: "1.0.0"
+description: >
+  Enforces PCI DSS v4.0 controls for cardholder data protection in AI systems.
+  Covers PANs, CVVs, expiry dates, and bank account information.
+industry: finance
+enforce_mode: true
+active: true
+
+rules:
+
+  - id: pci_pan_block
+    name: "Block Primary Account Number (PAN) Exposure"
+    description: "PCI-DSS Requirement 3.4 mandates PAN masking. Unmasked PANs must never reach LLMs."
+    condition_type: entity_detected
+    condition_value:
+      - credit_card
+    action: block
+    severity: critical
+    explanation: "Primary Account Number (PAN) detected. PCI-DSS Req.3.4: PANs must be masked when displayed."
+    remediation: "Block request. Mask PAN to show only last 4 digits. Never send full PAN to AI/LLM."
+    enabled: true
+
+  - id: pci_cvv_block
+    name: "Block CVV/CVC Detection"
+    description: "PCI-DSS Req.3.2.1: CAV2/CVC2/CVV2 must never be stored after authorization."
+    condition_type: entity_detected
+    condition_value:
+      - cvv
+    action: block
+    severity: critical
+    explanation: "CVV/CVC security code detected. PCI-DSS Req.3.2.1 prohibits storage or transmission."
+    remediation: "Block immediately. CVV must never be stored, logged, or sent to any system including AI."
+    enabled: true
+
+  - id: pci_bank_account_redact
+    name: "Redact Bank Account Numbers"
+    description: "Bank account numbers are sensitive financial data requiring protection."
+    condition_type: entity_detected
+    condition_value:
+      - bank_account
+      - routing_number
+    action: redact
+    severity: high
+    explanation: "Bank account or routing number detected. Financial data requiring masking per PCI-DSS scope."
+    remediation: "Redact account numbers. Retain only last 4 digits for identification purposes."
+    enabled: true
+
+  - id: pci_injection_critical
+    name: "Block All Injection in Payment Context"
+    description: "Injection in payment processing AI can lead to fraud. Zero tolerance."
+    condition_type: injection_detected
+    condition_value: true
+    action: block
+    severity: critical
+    explanation: "Injection attempt in payment/financial AI context. PCI-DSS Req.6.3 requires secure inputs."
+    remediation: "Block. Escalate to fraud team. Log for PCI audit trail. Consider session termination."
+    enabled: true
+
+  - id: pci_high_risk_alert
+    name: "Alert on High-Risk Financial Queries"
+    description: "High risk score in financial context warrants immediate review."
+    condition_type: risk_score_above
+    condition_value: 0.70
+    action: alert
+    severity: high
+    explanation: "High risk score in PCI-scoped environment. Potential cardholder data exposure."
+    remediation: "Alert security team. Review query. Verify no cardholder data in LLM response."
+    enabled: true
